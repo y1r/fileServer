@@ -154,7 +154,6 @@ void send_recv_loop(int acc)
 					fileNameSize++;
 			}
 			strncpy(fileName, ptr, fileNameSize);
-			puts(fileName);
 			if((fp = fopen(fileName, "rb")) == NULL)
 				(void) fprintf(stderr, "ファイルオープンに失敗\n");
 			else{
@@ -186,9 +185,9 @@ void send_recv_loop(int acc)
 		else{
 			/*echoServerMode*/
 				len = (ssize_t) strlen(buf);
-                /*応答*/
+				/*応答*/
 				if((len = send(acc, buf, (size_t) len, 0)) == -1){
-                    /*エラー*/
+					/*エラー*/
 					perror("send");
 					break;
 				}
