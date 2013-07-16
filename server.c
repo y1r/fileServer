@@ -121,8 +121,8 @@ size_t mystrlcat(char *dst, const char *src, size_t size)
 void send_recv_loop(int acc)
 {
 	FILE *fp;
-	char buf[512], fileName[512] = "", *ptr, *file;
-	long fileSize;
+	char buf[512], fileName[512] = "", *ptr;
+	long fileSize, i = 0;
 	ssize_t len;
 	int fileNameSize = 0;
 	for(;;){
@@ -159,31 +159,10 @@ void send_recv_loop(int acc)
 			else{
 				(void) fseek( fp, 0, SEEK_END );
 				fileSize = ftell(fp);
-				if( (file = malloc(sizeof(char) * fileSize)) == NULL )
-					(void) fprintf(stderr, "メモリ確保に失敗\n");
 				(void) fseek(fp, 0, SEEK_SET);
-				(void) fread(file, sizeof(char), fileSize, fp);
-			fclose(fp);
-			}
-			/*応答*/
-			snprintf(buf, sizeof(buf)
-					 ,"fileNameSize:%dbyte\nfileName:%s\nfileSize:%ldbyte\n"
-					 ,fileNameSize, fileName, fileSize);
-			len = (ssize_t) strlen(buf);
-			if(( len = send(acc, buf, (size_t) len, 0)) == -1){
-				/*エラー*/
-				perror("send");
-				break;
-			}
-			len = (ssize_t) strlen(file);
-			if((len = send(acc, file, (size_t) len, 0)) == -1){
-				/*エラー*/
-				perror("send");
-				break;
-			}
-		}
-		else{
-			/*echoServerMode*/
+				snprintf(buf, sizeof(buf)
+						 ,"fileNameSize:%dbyte\nfileName:%s\nfileSize:%ldbyte\n"
+						 ,fileNameSize, fileName, fileSize);
 				len = (ssize_t) strlen(buf);
 				/*応答*/
 				if((len = send(acc, buf, (size_t) len, 0)) == -1){
@@ -191,10 +170,35 @@ void send_recv_loop(int acc)
 					perror("send");
 					break;
 				}
+				
+				while( fileSize > sizeof(buf) * i ){
+					memset( buf, 0, sizeof(buf));
+					(void) fread(buf, sizeof(char), sizeof(buf), fp);
+					i++;
+					len = sizeof(buf);
+					if((len = send(acc, buf, (size_t) len, 0)) == -1){
+						/*エラー*/
+						perror("send");
+						break;
+					}
+				}
+				fclose(fp);
+			}
+		}
+		else{
+			/*echoServerMode*/
+			len = (ssize_t) strlen(buf);
+			/*応答*/
+			if((len = send(acc, buf, (size_t) len, 0)) == -1){
+				/*エラー*/
+				perror("send");
+				break;
+			}
 		}
 	}
 }
 
+			
 int main(int argc, char* argv[])
 {
 	int soc;
